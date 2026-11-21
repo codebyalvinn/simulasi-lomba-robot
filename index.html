@@ -45,7 +45,13 @@ button.on{background:var(--org);border-color:var(--org);color:#fff}
 .ed{display:flex;height:470px;border:1px solid #2b4752;border-radius:6px;overflow:hidden;background:#0a1417}
 .ed pre,.ed textarea{margin:0;font:12.5px/1.5 ui-monospace,"Cascadia Code",Consolas,monospace;padding:8px 0}
 .ed pre{color:#4d6c75;text-align:right;padding-right:8px;padding-left:8px;overflow:hidden;user-select:none;border-right:1px solid #1c3139}
-.ed textarea{flex:1;background:transparent;color:#d8e4e7;border:0;resize:none;white-space:pre;overflow:auto;padding-left:10px;tab-size:2}
+.cw{position:relative;flex:1;overflow:hidden}
+.ed textarea{position:absolute;inset:0;width:100%;height:100%;background:transparent;color:transparent;caret-color:#fff;border:0;resize:none;white-space:pre;overflow:auto;padding-left:10px;tab-size:2}
+.ed textarea::selection{background:rgba(79,195,201,.35)}
+.ed #hl{position:absolute;inset:0;text-align:left;border:0;padding:8px 0 24px 10px;color:#d8e4e7;pointer-events:none;tab-size:2}
+#hl i{font-style:normal}#hl .c{font-style:italic}
+.k{color:#4fc3c9}.n{color:#7cc4ff}.b{color:#ff9a3c}.u{color:#ffd166}.v{color:#f2e18f}.c{color:#6f8f98}.p{color:#c792ea}.s{color:#a5d6a7}
+.lg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;font:12px ui-monospace,Consolas,monospace}
 #ser{height:150px;overflow:auto;margin:8px 0 0;background:#0a1417;border:1px solid #2b4752;border-radius:6px;padding:8px;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
 #ser .e{color:#ff8f80}#ser .t{color:#6f9aa5}
 .hw{grid-column:1/-1}
@@ -88,7 +94,8 @@ button.on{background:var(--org);border-color:var(--org);color:#fff}
   <div class="bar" style="margin:0 0 8px">
     <button id="bVer">Verify</button><button class="p" id="bUp">Upload ke robot</button><button id="bOrig">Kode awal</button>
   </div>
-  <div class="ed"><pre id="gut"></pre><textarea id="ed" spellcheck="false" aria-label="Editor kode Arduino"></textarea></div>
+  <div class="ed"><pre id="gut"></pre><div class="cw"><pre id="hl" aria-hidden="true"></pre><textarea id="ed" spellcheck="false" aria-label="Editor kode Arduino"></textarea></div></div>
+  <div class="lg"><span class="k">kata kunci/tipe</span><span class="n">konstanta</span><span class="b">fungsi Arduino</span><span class="u">fungsi buatan sendiri</span><span class="v">angka</span><span class="p">#include/#define</span><span class="c">komentar</span></div>
   <div id="ser" role="log" aria-label="Serial monitor"></div>
   <p class="note" style="color:#8fb0b8">Kode C++ ini diterjemahkan ke JavaScript, jadi angka, nilai gerak() di dalam switch, dan urutan pick and place bisa diubah. Gaya kode yang didukung sama seperti sketch ini.</p>
 </section>
@@ -426,7 +433,10 @@ $('qk').innerHTML=QK.map(q=>`<div><label for="q_${q[0]}">${q[0]} <output id="oq_
 function syncQ(){QK.forEach(q=>{const m=ed.value.match(new RegExp('\\b'+q[0]+'\\s*=\\s*(-?\\d+)'));if(m){$('q_'+q[0]).value=m[1];$('oq_'+q[0]).textContent=m[1]}})}
 QK.forEach(q=>{const s=$('q_'+q[0]);s.oninput=()=>$('oq_'+q[0]).textContent=s.value;
   s.onchange=()=>{ed.value=ed.value.replace(new RegExp('(\\b'+q[0]+'\\s*=\\s*)-?\\d+'),'$1'+s.value);gut();$('ser').innerHTML='';load(true)}});
-function gut(){$('gut').textContent=ed.value.split('\n').map((_,i)=>i+1).join('\n')}
+const KW=/^(void|int|const|if|else|switch|case|break|while|for|return|bool|float|unsigned|long|uint8_t|byte|char|true|false|enum|continue|default|static|AF_DCMotor|Servo)$/,CN=/^(HIGH|LOW|INPUT|OUTPUT|FORWARD|BACKWARD|RELEASE|A[0-5])$/,BI=/^(setup|loop|pinMode|digitalRead|digitalWrite|analogRead|delay|millis|abs|constrain|attach|write|run|setSpeed|begin|println|print|Serial|F)$/;
+function hl(t){const e=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),u=new Set([...t.matchAll(/\b(?:void|int|bool|float|long)\s+(\w+)\s*\(/g)].map(m=>m[1])),w=(c,x)=>'<i class="'+c+'">'+e(x)+'</i>';
+  return t.replace(/(\/\/.*|\/\*[\s\S]*?\*\/)|(^[ \t]*#\w+[^\n\/]*)|("(?:[^"\\\n]|\\.)*")|\b(0b[01]+|0x[\da-fA-F]+|\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b|([&<>])/gm,(m,c,p,s,n,i,o)=>c?w('c',c):p?w('p',p):s?w('s',s):n?w('v',n):o?e(o):!i?m:KW.test(i)?w('k',i):CN.test(i)?w('n',i):BI.test(i)?w('b',i):u.has(i)?w('u',i):i)}
+function gut(){$('gut').textContent=ed.value.split('\n').map((_,i)=>i+1).join('\n');$('hl').innerHTML=hl(ed.value)+'\n'}
 $('bRun').onclick=()=>{run=!run;sync()};
 $('bReset').onclick=()=>{$('ser').innerHTML='';load(false);out('Reset. Tekan Mulai.','t')};
 $('bAdd').onclick=()=>{place=!place;$('bAdd').classList.toggle('on',place);cv.style.cursor=place?'crosshair':'default'};
@@ -436,7 +446,7 @@ $('sTrk').onchange=e=>{track(e.target.value);$('ser').innerHTML='';load(false)};
 $('bVer').onclick=()=>{if(build())out('Verify OK: sketch berhasil diterjemahkan dan siap di-upload.','t')};
 $('bUp').onclick=()=>{$('ser').innerHTML='';out('Upload selesai. Robot reset.','t');syncQ();load(true)};
 $('bOrig').onclick=()=>{ed.value=SRC;gut();syncQ()};
-ed.oninput=gut;ed.onscroll=()=>$('gut').scrollTop=ed.scrollTop;
+ed.oninput=gut;ed.onscroll=()=>{$('gut').scrollTop=ed.scrollTop;$('hl').scrollTop=ed.scrollTop;$('hl').scrollLeft=ed.scrollLeft};
 ed.onkeydown=e=>{if(e.key==='Tab'){e.preventDefault();ed.setRangeText('  ',ed.selectionStart,ed.selectionEnd,'end')}};
 const wp=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]};
 cv.onpointerdown=e=>{const[x,y]=wp(e);
